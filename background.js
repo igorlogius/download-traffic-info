@@ -1,4 +1,8 @@
 
+browser.browserAction.setBadgeBackgroundColor({color: "red"});
+browser.browserAction.setBadgeText({text: "off"});
+
+let dl_total_bytes = 0;
 
 function formatBytes(bytes, decimals = 0) {
     if (bytes === 0) return '0 Bytes';
@@ -8,8 +12,6 @@ function formatBytes(bytes, decimals = 0) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + '' + sizes[i];
 }
-
-let dl_total_bytes = 0;
 
 function onBeforeRequest(details) {
 
@@ -28,33 +30,25 @@ function onBeforeRequest(details) {
 		//console.log(details.tabId, details.url, 'req_bytes:',formatBytes(req_bytes));
 		dl_total_bytes = dl_total_bytes + req_bytes;
 		req_bytes = 0;
-//		console.log('dl_total_bytes:', formatBytes(dl_total_bytes));
-		 browser.browserAction.setBadgeText({text: formatBytes(dl_total_bytes)});
+        //console.log('dl_total_bytes:', formatBytes(dl_total_bytes));
+		browser.browserAction.setBadgeText({text: formatBytes(dl_total_bytes)});
 	};
 	filter.onerror = event => {
 		req_bytes = 0;
 	}
 }
 
-/*
-browser.webRequest.onBeforeRequest.addListener(
-  onBeforeRequest,
-  {urls: ["<all_urls>"]},
-  ["blocking", "requestBody"]
-);
-*/
-
 browser.browserAction.onClicked.addListener((tab) => {
-
 	dl_total_bytes = 0;
-	browser.webRequest.onBeforeRequest.removeListener(onBeforeRequest);
-
-	browser.webRequest.onBeforeRequest.addListener(
-		onBeforeRequest,
-		{urls: ["<all_urls>"]},
-		["blocking", "requestBody"]
-	);
-
+    if(browser.webRequest.onBeforeRequest.hasListener(onBeforeRequest)){
+	    browser.webRequest.onBeforeRequest.removeListener(onBeforeRequest);
+        browser.browserAction.setBadgeBackgroundColor({color: "red"});
+        browser.browserAction.setBadgeText({text: "off"});
+    }else{
+        browser.browserAction.setBadgeBackgroundColor({color: "green"});
+		browser.browserAction.setBadgeText({text: "on"});
+        browser.webRequest.onBeforeRequest.addListener(onBeforeRequest, {urls: ["<all_urls>"]}, ["blocking", "requestBody"]);
+    }
 });
 
 
